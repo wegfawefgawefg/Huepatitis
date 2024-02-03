@@ -1,20 +1,21 @@
 use std::{
     fs::File,
-    io::{BufRead, BufReader},
+    io::{BufRead, BufReader, BufWriter},
+    path::PathBuf,
 };
 
+use clap::{arg, command, value_parser};
+use png::{BitDepth, ColorType, Encoder};
+
 use coloring::palletify_image;
-use image::Rgba;
+use image::{Rgba, RgbaImage};
 use utils::hex_to_rgb;
 
 mod coloring;
 mod utils;
 
-use clap::{arg, command, value_parser};
-use std::path::PathBuf;
-
 fn main() {
-    let matches = command!() // requires `cargo` feature
+    let matches = command!()
         .arg(
             arg!(
                 -i --image <IMAGE> "Sets the input image file"
@@ -47,9 +48,32 @@ fn main() {
 
     let palette = load_palette(palette_path).expect("Failed to load palette");
 
-    if let Err(e) = palletify_image(image_path, &palette, output_path) {
-        eprintln!("Error processing image: {}", e);
+    match palletify_image(image_path, &palette) {
+        Ok(image) => {
+            if let Err(e) = save_compressed_image(&image, output_path) {
+                eprintln!("Failed to save compressed image: {}", e);
+            }
+        }
+        Err(e) => eprintln!("Error during image processing: {}", e),
     }
+}
+
+fn save_compressed_image(image: &RgbaImage, output_path: &PathBuf) -> Result<(), std::io::Error> {
+    let (width, height) = image.dimensions();
+
+    let file = File::create(output_path)?;
+    let w = &mut BufWriter::new(file);
+
+    let mut encoder = Encoder::new(w, width, height);
+    encoder.set_color(ColorType::Rgba);
+    encoder.set_depth(BitDepth::Eight);
+    encoder.set_compression(png::Compression::Default);
+    encoder.set_filter(png::FilterType::Sub);
+
+    let mut writer = encoder.write_header()?;
+    writer.write_image_data(image.as_ref())?; // as_ref() to borrow the image data as &[u8]
+
+    Ok(())
 }
 
 fn load_palette(palette_path: &std::path::PathBuf) -> Result<Vec<Rgba<u8>>, std::io::Error> {
