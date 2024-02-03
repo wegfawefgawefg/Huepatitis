@@ -17,4 +17,4 @@ huepatitis --image test_images/bigimage_mountain.jpg --palette palletes/a.p -o 4
 
 ## Notes:
 - takes up to 2 seconds for 8k images, mostly for compression, but otherwise is fast
-- great place to get palette: https://lospec.com
+- great place to get palettes: https://lospec.com
