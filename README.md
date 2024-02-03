@@ -10,9 +10,15 @@ A tool that converts images to reduced palletes.
 
 ## How do?
 
-<!-- in term example -->
 ```bash
 huepatitis --image test_images/bigimage_mountain.jpg --palette palletes/a.p -o 4kpo.png
+```
+
+## Options
+Theres a no-transparency option if you want to convert transparent pixels to the nearest color in the palette.
+
+```bash 
+-n or --notransparency
 ```
 
 ## Notes:
