@@ -37,16 +37,21 @@ fn main() {
             .required(false)
             .value_parser(value_parser!(PathBuf)),
         )
+        .arg(arg!(
+            -n --notransparency "Disables transparency in the palette"
+        ))
         .get_matches();
 
     let image_path = matches.get_one::<PathBuf>("image").unwrap();
 
     let palette_path = matches.get_one::<PathBuf>("palette").unwrap();
 
+    let no_transparency: bool = *matches.get_one::<bool>("notransparency").unwrap_or(&false);
+
     let binding = PathBuf::from("palletified_image.png");
     let output_path = matches.get_one::<PathBuf>("output").unwrap_or(&binding);
 
-    let palette = load_palette(palette_path).expect("Failed to load palette");
+    let palette = load_palette(palette_path, no_transparency).expect("Failed to load palette");
 
     match palletify_image(image_path, &palette) {
         Ok(image) => {
@@ -76,7 +81,10 @@ fn save_compressed_image(image: &RgbaImage, output_path: &PathBuf) -> Result<(),
     Ok(())
 }
 
-fn load_palette(palette_path: &std::path::PathBuf) -> Result<Vec<Rgba<u8>>, std::io::Error> {
+fn load_palette(
+    palette_path: &std::path::PathBuf,
+    no_transparency: bool,
+) -> Result<Vec<Rgba<u8>>, std::io::Error> {
     let file = File::open(palette_path)?;
     let reader = BufReader::new(file);
     let mut palette = Vec::new();
@@ -88,6 +96,10 @@ fn load_palette(palette_path: &std::path::PathBuf) -> Result<Vec<Rgba<u8>>, std:
                 palette.push(color);
             }
         }
+    }
+    // push transparent black also, unless explicitly disabled
+    if !no_transparency {
+        palette.push(Rgba([0, 0, 0, 0]));
     }
 
     Ok(palette)
